@@ -1,0 +1,22 @@
+ // added by me (hacking)
+    // 30fps 12bit
+    //nope doesn't work
+    {
+        .bus_fmt = MEDIA_BUS_FMT_SGBRG12_1X12,
+        .width = 3840,
+        .height = 2160,
+        .max_fps = {
+                .numerator = 10000,
+                .denominator = 300000,
+        },
+        .exp_def = 0x08ca - 0x08,
+        .hts_def = 1100 * IMX415_4LANES * 2,
+        .vts_def = 2250,
+        .global_reg_list = imx415_global_10bit_3864x2192_regs,
+        .reg_list = sensor_12bit_30fps_regs,
+        .hdr_mode = NO_HDR,
+        .mipi_freq_idx = 2, //891
+        .bpp = 12,
+    },
+
+// copy from consti10

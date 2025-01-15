@@ -1,0 +1,563 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ */
+/dts-v1/;
+#include "rv1126.dtsi"
+#include "rv1126-vision-board-def.dtsi"
+#include <dt-bindings/display/media-bus-format.h>
+
+
+/ {
+	model = "RV1126 Vision board";
+	compatible = "rockchip,rv1126-evb-ddr3-v13", "rockchip,rv1126";
+
+	chosen {
+		bootargs = "earlycon=uart8250,mmio32,0xff570000 console=ttyFIQ0 root=PARTUUID=614e0000-0000 rootfstype=ext4 rw rootwait snd_aloop.index=7";
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led_stat {
+			gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_LOW>;
+			label = "heartbeat";
+			default-state = "off";
+			linux,default-trigger = "heartbeat";
+		};
+		led_act {
+			gpios = <&gpio1 RK_PB3 GPIO_ACTIVE_LOW>;
+			label = "green";
+			default-state = "off";
+		};
+	};
+
+	// OSD pads for connect joystick
+	adc_keys: adc-keys
+	{
+		compatible = "adc-keys";
+		io-channels = <&saradc 5>;
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <1800000>;
+		poll-interval = <100>;
+
+		up-key {
+			label = "up";
+			linux,code = <KEY_UP>;
+			press-threshold-microvolt = <1109000>;
+		};
+
+		down-key {
+			label = "down";
+			linux,code = <KEY_DOWN>;
+			press-threshold-microvolt = <163000>;
+		};
+
+		left-key {
+			label = "left";
+			linux,code = <KEY_LEFT>;
+			press-threshold-microvolt = <1325000>;
+		};
+
+		right-key {
+			label = "right";
+			linux,code = <KEY_RIGHT>;
+			press-threshold-microvolt = <787000>;
+		};
+
+		enter-key {
+			label = "enter";
+			linux,code = <KEY_ENTER>;
+			press-threshold-microvolt = <1477000>;
+		};
+	};
+	
+	hdmi_osc: hdmi-osc {
+		compatible = "fixed-clock";
+		clock-output-names = "hdmi-osc";
+		clock-frequency = <27000000>;
+		#clock-cells = <0>;
+	};
+
+};
+
+// Watchdog if needed
+&wdt {
+	status = "disabled";
+	//status = "okay";
+};
+
+&saradc {
+	status = "okay";
+	vref-supply = <&vcc_1v8>;
+};
+
+// PWM outputs 
+&pwm0 {
+	status = "okay";
+};
+
+&pwm1 {
+	status = "okay";
+};
+
+&pwm4 {
+	status = "okay";
+};
+
+&pwm5 {
+	status = "okay";
+};
+
+&uart0 {
+	/delete-property/ pinctrl-0;
+	pinctrl-0 = <&uart0_xfer>;
+	dma-names = "tx","rx";
+	status = "okay";
+};
+
+&uart3 {
+	/delete-property/ pinctrl-0;
+	pinctrl-0 = <&uart3m2_xfer>;
+	dma-names = "tx","rx";
+	status = "okay";
+};
+
+&isp_reserved {
+	//size = <0x6000000>;
+	//size = <0x10000000>;//256M and need 4M align
+	size = <0xA000000>;
+};
+
+&rkispp_vir2 {
+       status = "okay";
+};
+
+&npu {
+	npu-supply = <&vdd_npu_vepu>;
+	status = "okay";
+};
+
+&npu_tsadc {
+	status = "okay";
+};
+
+
+&fiq_debugger {
+	status = "okay";
+	rockchip,baudrate = <115200>;
+};
+
+&i2c3 {
+	/delete-property/ pinctrl-0;
+	status = "okay";
+	clock-frequency = <400000>;
+	pinctrl-0 = <&i2c3m0_xfer>;
+
+	// TODO: need to check address 
+	icm20602@68 {
+		status = "okay";
+		compatible = "invensense,icm20602";
+		reg = <0x68>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <1 IRQ_TYPE_LEVEL_LOW>;
+
+		irq-gpio = <&gpio3 RK_PB1 IRQ_TYPE_EDGE_RISING>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&icm20602_irq_gpio>;
+
+		mpu-int_config = <0x10>;
+		mpu-level_shifter = <0>;
+		mpu-orientation = <0 1 0 1 0 0 0 0 1>;
+		orientation-x= <0>;
+		orientation-y= <1>;
+		orientation-z= <0>;
+		support-hw-poweroff = <0>;
+		mpu-debug = <1>;
+	};
+
+	// TODO: need to check address 
+	bmp280: pressure@76 {
+		compatible = "bosch,bmp280";
+		reg = <0x76>;
+	};
+
+	// TODO: need to debug tc358743 chip
+	// tc358743@f {
+	// 	compatible = "toshiba,tc358743";
+	// 	reg = <0x0f>;
+	// 	clocks = <&hdmi_osc>;
+	// 	clock-names = "refclk";
+	// 	pinctrl-names = "rockchip,camera_default";
+	// 	// reset-gpios = <&gpio6 9 GPIO_ACTIVE_LOW>;
+	// 	//reset-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
+	// 	// interrupt-parent = <&gpio2>;
+	// 	// interrupts = <5 IRQ_TYPE_LEVEL_HIGH>;
+	// 	rockchip,camera-module-index = <1>;
+	// 	rockchip,camera-module-facing = "front";
+	// 	rockchip,camera-module-name = "TRC-2232A6";
+	// 	rockchip,camera-module-lens-name = "28IRC-4M-F22-v1.0x23";
+
+	// 	port {
+	// 		tc358743_out: endpoint {
+	// 			remote-endpoint = <&tc358743_out_in>;
+	// 			data-lanes = <1 2 3 4>;
+	// 			clock-lanes = <0>;
+	// 			clock-noncontinuous;
+	// 			link-frequencies = /bits/ 64 <297000000>;
+	// 		};
+	// 	};
+	// };
+
+};
+
+
+&i2c5 {
+	/delete-property/ pinctrl-0;
+	status = "okay";
+	clock-frequency = <400000>;
+	pinctrl-0 = <&i2c5m2_xfer>;
+
+	adv7393: adv7393@2a {
+		compatible = "adi,adv7391";
+		reset-gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
+		reg = <0x2a>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			tve_in: port@0 {
+				reg = <0>;
+				panel_in_rgb: endpoint {
+					remote-endpoint = <&rgb_out_panel>;
+				};
+			};
+		};
+	};
+
+};
+
+&display_subsystem {
+	status = "okay";
+};
+
+&rgb {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&lcdc_ctl>;
+
+	ports {
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			rgb_out_panel: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&panel_in_rgb>;
+			};
+		};
+	};
+};
+
+&vop{
+	status = "okay";
+};
+
+&vop_mmu{
+	status = "okay";
+};
+
+&i2c1 {
+
+	gc4663: gc4663@29 {
+		reg = <0x29>;
+		compatible = "galaxycore,gc4663";
+		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-facing = "front";
+		clock-names = "xvclk";
+		pinctrl-names = "rockchip,camera_default";
+
+		pinctrl-0 = <&mipicsi_clk0>;
+	
+		power-domains = <&power RV1126_PD_VI>;
+		dvdd-supply = <&vcc3v3_sys>;
+		dovdd-supply = <&vcc3v3_sys>;
+		avdd-supply = <&vcc3v3_sys>;
+		clocks = <&cru CLK_MIPICSI_OUT>;
+		reset-gpios = <&gpio1 RK_PD4 GPIO_ACTIVE_HIGH>;
+		rockchip,camera-module-name = "TRC-2232A6";
+		rockchip,camera-module-lens-name = "28IRC-4M-F22-v1.0x23";
+
+		port {
+			mipi_csi_0_out_gc4663: endpoint {
+				remote-endpoint = <&mipi_csi_0_in_gc4663>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	// imx219: imx219@10 {
+	// 	compatible = "sony,imx219";
+	// 	reg = <0x10>;
+	// 	clocks = <&cru CLK_MIPICSI_OUT>;
+	// 	clock-names = "xvclk";
+	// 	power-domains = <&power RV1126_PD_VI>;
+	// 	pinctrl-names = "rockchip,camera_default";
+	// 	pinctrl-0 = <&mipicsi_clk1>;
+	// 	avdd-supply = <&vcc3v3_sys>;
+	// 	dovdd-supply = <&vcc3v3_sys>;
+	// 	dvdd-supply = <&vcc3v3_sys>;
+	// 	// reset-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_HIGH>;
+	// 	pwd-gpios = <&gpio2 RK_PA1 GPIO_ACTIVE_HIGH>;
+	// 	rockchip,camera-module-index = <1>;
+	// 	rockchip,camera-module-facing = "front";
+	// 	rockchip,camera-module-name = "YT10092";
+	// 	rockchip,camera-module-lens-name = "IR0147-28IRC-8M-F20";
+
+	// 	port {
+	// 		mipi_out_imx219: endpoint {
+	// 			remote-endpoint = <&mipi_in_imx219>;
+	// 			data-lanes = <1 2>;
+	// 		};
+	// 	};
+	// };
+
+	gc4663_2: gc4663_2@10 {
+		reg = <0x10>;
+		compatible = "galaxycore,gc4663";
+		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-facing = "back";
+		clock-names = "xvclk";
+		pinctrl-names = "rockchip,camera_default";
+
+		pinctrl-0 = <&mipicsi_clk1>;
+	
+		power-domains = <&power RV1126_PD_VI>;
+		dvdd-supply = <&vcc3v3_sys>;
+		dovdd-supply = <&vcc3v3_sys>;
+		avdd-supply = <&vcc3v3_sys>;
+		clocks = <&cru CLK_MIPICSI_OUT>;
+		reset-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_HIGH>;
+		rockchip,camera-module-name = "TRC-2232A6";
+		rockchip,camera-module-lens-name = "28IRC-4M-F22-v1.0x23";
+
+		port {
+			mipi_csi_1_out_gc4663_2: endpoint {
+				remote-endpoint = <&mipi_csi_1_in_gc4663_2>;
+				data-lanes = <1 2>; // used 2 lanes
+			};
+		};
+	};
+
+	imx307: imx307@1a {
+		compatible = "sony,imx307";
+		status = "okay";
+		rockchip,camera-module-index = <1>;
+		reg = <0x1a>;
+		clocks = <&cru CLK_MIPICSI_OUT>;
+		clock-names = "xvclk";
+		power-domains = <&power RV1126_PD_VI>;
+		pinctrl-names = "rockchip,camera_default";
+		pinctrl-0 = <&mipicsi_clk1>;
+		dvdd-supply = <&vcc3v3_sys>;
+		dovdd-supply = <&vcc3v3_sys>;
+		avdd-supply = <&vcc3v3_sys>;
+		reset-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_HIGH>;
+		rockchip,camera-module-facing = "front";
+		rockchip,camera-module-name = "MTV4-IR-E-P";
+		rockchip,camera-module-lens-name = "40IRC-4MP-F16";
+		port {
+			mipi_csi_1_out_imx307: endpoint {
+				remote-endpoint = <&mipi_csi_1_in_imx307>;
+				data-lanes = <1 2 3 4>; // 4 lanes
+			};
+		};
+	};
+
+};
+
+
+&csi_dphy0 {
+	status = "okay";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			mipi_csi_0_in_gc4663: endpoint@0 {
+				reg = <0>;
+				// The port name of the sensor
+				remote-endpoint = <&mipi_csi_0_out_gc4663>;
+				data-lanes = <1 2>;
+			};
+
+			// TODO: need to debug tc358743 chip
+			// tc358743_out_in: endpoint@1 {
+			// 	reg = <1>;
+			// 	// The port name of the sensor
+			// 	remote-endpoint = <&tc358743_out>;
+			// 	// mipi lane number，1lane is <1>, 4lane is <1 2 3 4>
+			// 	data-lanes = <1 2 3 4>;
+			// };
+		};
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			csidphy0_out: endpoint@0 {
+				reg = <0>;
+				// name of isp port
+				remote-endpoint = <&isp_in>;
+			};
+		};
+	};
+};
+
+&csi_dphy1 {
+	status = "okay";
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			mipi_csi_1_in_gc4663_2: endpoint@0 {
+				reg = <0>;
+				// The port name of the sensor
+				remote-endpoint = <&mipi_csi_1_out_gc4663_2>;
+				data-lanes = <1 2>; // used 2 lanes
+			};
+
+			mipi_csi_1_in_imx307: endpoint@1 {
+				reg = <1>;
+				// The port name of the sensor
+				remote-endpoint = <&mipi_csi_1_out_imx307>;
+				data-lanes = <1 2 3 4>; // used 4 lanes
+			};
+		};
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			csidphy1_out: endpoint@0 {
+				reg = <0>;
+				// name of isp port
+				remote-endpoint = <&isp1_in>;
+			};
+		};
+	};
+};
+
+&rkisp_mmu{
+	//status = "okay";
+	status = "disabled";
+};
+
+&rkisp {
+	status = "okay";
+	/delete-property/ memory-region;
+	memory-region = <&isp_reserved>;
+	//iommus = <&rkisp_mmu>;
+};
+
+&rkisp_vir0 {
+	status = "okay";
+//	wait-line = <720>;
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			isp_in: endpoint@0 {
+				reg = <0>;
+				// name of mipi dphy port
+				remote-endpoint = <&csidphy0_out>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			isp0_out: endpoint@1 {
+				reg = <1>;
+				// ispp port name, isp output to ispp
+				remote-endpoint = <&ispp0_in>;
+				};
+		};
+	};
+};
+
+&rkisp_vir1 {
+	status = "okay";
+//	wait-line = <720>;
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			isp1_in: endpoint@0 {
+				reg = <0>;
+				// name of mipi dphy port
+				remote-endpoint = <&csidphy1_out>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			isp1_out: endpoint@1 {
+				reg = <1>;
+				// ispp port name, isp output to ispp
+				remote-endpoint = <&ispp1_in>;
+				};
+		};
+	};
+};
+
+&rkispp_mmu{
+	//status = "okay";
+	status = "disabled";
+};
+
+&rkispp {
+	memory-region = <&isp_reserved>;
+	rockchip,restart-monitor-en;
+	status = "okay";
+	max-input = <2560 1440 60>;
+};
+
+&rkispp_vir0 {
+	status = "okay";
+//	wait-line = <1280>;
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		Ispp0_in: endpoint@0 {
+			reg = <0>;
+			// isp port name, ispp input
+			remote-endpoint = <&isp0_out>;
+		};
+	};
+};
+
+&rkispp_vir1 {
+	status = "okay";
+//	wait-line = <1280>;
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		Ispp1_in: endpoint@0 {
+			reg = <0>;
+			// isp port name, ispp input
+			remote-endpoint = <&isp1_out>;
+		};
+	};
+};
+
