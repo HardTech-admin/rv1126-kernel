@@ -84,13 +84,13 @@ make_boot_img()
 		${KERNEL_IMAGE_ARG} \
 		${RAMDISK_ARG} \
 		--second resource.img \
-		-o boot.img && \
+		-o arch/arm/boot/boot.img && \
 	echo "  Image:  boot.img (with Image ${RAMDISK_IMG} resource.img) is ready";
 	${srctree}/scripts/mkbootimg \
 		${KERNEL_ZIMAGE_ARG} \
 		${RAMDISK_ARG} \
 		--second resource.img \
-		-o zboot.img && \
+		-o arch/arm/boot/zboot.img && \
 	echo "  Image:  zboot.img (with ${ZIMAGE} ${RAMDISK_IMG} resource.img) is ready"
 }
 
@@ -101,14 +101,14 @@ repack_boot_img()
 		${KERNEL_IMAGE_ARG} \
 		--second resource.img \
 		--dtb ${DTB_PATH} \
-		-o boot.img &&
+		-o arch/arm/boot/boot.img &&
 	echo "  Image:  boot.img (${BOOT_IMG} + Image + resource.img) is ready";
 	${srctree}/scripts/repack-bootimg \
 		--boot_img ${BOOT_IMG} --out ${OUT} \
 		${KERNEL_ZIMAGE_ARG} \
 		--second resource.img \
 		--dtb ${DTB_PATH} \
-		-o zboot.img && \
+		-o arch/arm/boot/zboot.img && \
 	echo "  Image:  zboot.img (${BOOT_IMG} + ${ZIMAGE} + resource.img) is ready"
 }
 
